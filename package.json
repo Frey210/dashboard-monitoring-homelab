@@ -1,0 +1,27 @@
+{
+  "name": "homelab-3d-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "vite",
+    "dev:server": "node --watch server/server.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node server/server.js"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.4"
+  },
+  "dependencies": {
+    "axios": "^1.15.0",
+    "express": "^5.2.1",
+    "three": "^0.183.2"
+  }
+}
