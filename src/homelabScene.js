@@ -5,6 +5,12 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { NEON, NODE_LAYOUT } from './config.js';
 
+const LINK_STATE_PRIORITY = {
+  down: 3,
+  warn: 2,
+  up: 1,
+};
+
 function createMaterial(colorHex) {
   return new THREE.MeshStandardMaterial({
     color: new THREE.Color(colorHex),
@@ -31,6 +37,47 @@ function stateFromMetrics(metrics) {
   return 'up';
 }
 
+function dominantState(...states) {
+  return states.reduce((current, candidate) => {
+    return LINK_STATE_PRIORITY[candidate] > LINK_STATE_PRIORITY[current] ? candidate : current;
+  }, 'up');
+}
+
+function createFiberCurve(from, to) {
+  const midpoint = from.clone().lerp(to, 0.5);
+  const span = from.distanceTo(to);
+  const elevation = Math.max(1.2, span * 0.1);
+  midpoint.y += elevation;
+  return new THREE.CatmullRomCurve3([from.clone(), midpoint, to.clone()]);
+}
+
+function createPacketMaterial(color, intensity, opacity = 1) {
+  return new THREE.MeshBasicMaterial({
+    color,
+    transparent: opacity < 1,
+    opacity,
+    toneMapped: false,
+  });
+}
+
+function packetConfigForState(state) {
+  if (state === 'warn') {
+    return {
+      color: new THREE.Color('#f59e0b'),
+      speed: 0.018,
+      spacing: 0.04,
+      count: 7,
+    };
+  }
+
+  return {
+    color: new THREE.Color('#52f7ff'),
+    speed: 0.15,
+    spacing: 0.17,
+    count: 4,
+  };
+}
+
 export class HomelabScene {
   constructor({ mount, onNodeHover, onNodeSelect, onBackgroundSelect }) {
     this.mount = mount;
@@ -45,10 +92,11 @@ export class HomelabScene {
     this.hoveredNodeId = null;
     this.selectedNodeId = null;
     this.autoRotate = true;
-    this.defaultTarget = new THREE.Vector3(-4.8, 2.4, 0);
+    this.defaultTarget = new THREE.Vector3(-5.4, 2.4, 0);
     this.desiredTarget = this.defaultTarget.clone();
     this.defaultCamera = new THREE.Vector3(22, 18, 24);
     this.desiredCamera = this.defaultCamera.clone();
+    this.linkPackets = [];
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(NEON.background);
@@ -81,9 +129,9 @@ export class HomelabScene {
     this.composer.addPass(
       new UnrealBloomPass(
         new THREE.Vector2(mount.clientWidth, mount.clientHeight),
-        0.9,
-        0.6,
-        0.2,
+        1.15,
+        0.75,
+        0.15,
       ),
     );
 
@@ -95,7 +143,7 @@ export class HomelabScene {
   }
 
   setupEnvironment() {
-    const ambientLight = new THREE.AmbientLight('#75bfff', 0.9);
+    const ambientLight = new THREE.AmbientLight('#75bfff', 0.8);
     const pointLight = new THREE.PointLight('#38bdf8', 32, 80, 2);
     pointLight.position.set(8, 18, 8);
     const violetLight = new THREE.PointLight('#8b5cf6', 18, 100, 2);
@@ -106,7 +154,7 @@ export class HomelabScene {
     const floor = new THREE.GridHelper(70, 40, '#164e63', '#082f49');
     floor.position.y = -2.5;
     floor.material.transparent = true;
-    floor.material.opacity = 0.32;
+    floor.material.opacity = 0.24;
     this.scene.add(floor);
 
     const plane = new THREE.Mesh(
@@ -114,7 +162,7 @@ export class HomelabScene {
       new THREE.MeshBasicMaterial({
         color: '#071226',
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.46,
       }),
     );
     plane.rotation.x = -Math.PI / 2;
@@ -146,11 +194,6 @@ export class HomelabScene {
     const sphereGeometry = new THREE.SphereGeometry(1.2, 48, 48);
     const auraGeometry = new THREE.SphereGeometry(1.65, 32, 32);
     const ringGeometry = new THREE.TorusGeometry(2.5, 0.08, 16, 100);
-    const lineMaterial = new THREE.LineBasicMaterial({
-      color: '#2441ff',
-      transparent: true,
-      opacity: 0.45,
-    });
 
     const gatewayPosition = new THREE.Vector3(...NODE_LAYOUT.find((node) => node.id === 'gateway').position);
     const monitoringPosition = new THREE.Vector3(...NODE_LAYOUT.find((node) => node.id === 'aqn-node1').position);
@@ -198,11 +241,23 @@ export class HomelabScene {
 
       const links = [];
       if (node.id !== 'gateway') {
-        links.push(this.createLink(position, gatewayPosition, lineMaterial));
+        links.push(this.createLink({
+          fromNodeId: node.id,
+          toNodeId: 'gateway',
+          from: position,
+          to: gatewayPosition,
+          emphasis: node.kind,
+        }));
       }
 
       if (node.kind === 'cluster') {
-        links.push(this.createLink(position, monitoringPosition, lineMaterial));
+        links.push(this.createLink({
+          fromNodeId: node.id,
+          toNodeId: 'aqn-node1',
+          from: position,
+          to: monitoringPosition,
+          emphasis: 'cluster-core',
+        }));
       }
 
       this.nodeMap.set(node.id, {
@@ -216,11 +271,79 @@ export class HomelabScene {
     });
   }
 
-  createLink(from, to, material) {
-    const geometry = new THREE.BufferGeometry().setFromPoints([from, to]);
-    const line = new THREE.Line(geometry, material.clone());
-    this.scene.add(line);
-    return line;
+  createLink({ fromNodeId, toNodeId, from, to, emphasis }) {
+    const curve = createFiberCurve(from, to);
+    const shellGeometry = new THREE.TubeGeometry(curve, 40, 0.11, 10, false);
+    const coreGeometry = new THREE.TubeGeometry(curve, 40, 0.045, 10, false);
+
+    const shell = new THREE.Mesh(
+      shellGeometry,
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color('#0b2444'),
+        emissive: new THREE.Color('#0a1f3c'),
+        emissiveIntensity: 0.18,
+        transparent: true,
+        opacity: 0.6,
+        metalness: 0.28,
+        roughness: 0.34,
+      }),
+    );
+
+    const core = new THREE.Mesh(
+      coreGeometry,
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color('#46f3ff'),
+        transparent: true,
+        opacity: 0.96,
+        toneMapped: false,
+      }),
+    );
+
+    this.scene.add(shell, core);
+
+    const packets = Array.from({ length: 7 }, (_, index) => {
+      const packet = new THREE.Group();
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 16, 16),
+        createPacketMaterial('#52f7ff', 1, 0.96),
+      );
+
+      const tailOne = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 12, 12),
+        createPacketMaterial('#52f7ff', 1, 0.32),
+      );
+      const tailTwo = new THREE.Mesh(
+        new THREE.SphereGeometry(0.055, 10, 10),
+        createPacketMaterial('#52f7ff', 1, 0.18),
+      );
+
+      packet.add(head, tailOne, tailTwo);
+      packet.visible = false;
+      this.scene.add(packet);
+
+      return {
+        group: packet,
+        head,
+        tailOne,
+        tailTwo,
+        offset: index / 7,
+        jitter: Math.random() * 0.045,
+      };
+    });
+
+    const link = {
+      fromNodeId,
+      toNodeId,
+      emphasis,
+      curve,
+      shell,
+      core,
+      packets,
+      state: 'up',
+    };
+
+    this.linkPackets.push(link);
+    return link;
   }
 
   setupEvents() {
@@ -253,8 +376,7 @@ export class HomelabScene {
         return;
       }
 
-      const snapshot = this.snapshot(nodeId);
-      this.onNodeSelect?.(snapshot);
+      this.onNodeSelect?.(this.snapshot(nodeId));
     };
 
     window.addEventListener('resize', this.handleResize);
@@ -292,6 +414,12 @@ export class HomelabScene {
     };
   }
 
+  linkState(link) {
+    const fromState = stateFromMetrics(this.metricsByNode.get(link.fromNodeId));
+    const toState = stateFromMetrics(this.metricsByNode.get(link.toNodeId));
+    return dominantState(fromState, toState);
+  }
+
   update(metrics) {
     metrics.nodes.forEach((nodeMetrics) => {
       this.metricsByNode.set(nodeMetrics.id, nodeMetrics);
@@ -311,11 +439,28 @@ export class HomelabScene {
       node.aura.material.color.copy(color);
       node.ring.material.color.copy(color);
       node.group.scale.setScalar(scale);
+    });
 
-      node.links.forEach((link) => {
-        link.material.color.copy(color);
-        link.material.opacity = state === 'down' ? 0.18 : 0.45;
-      });
+    this.linkPackets.forEach((link) => {
+      const state = this.linkState(link);
+      link.state = state;
+
+      if (state === 'down') {
+        link.shell.material.color.set('#4b5563');
+        link.shell.material.emissive.set('#1f2937');
+        link.shell.material.emissiveIntensity = 0;
+        link.shell.material.opacity = 0.45;
+        link.core.material.color.set('#6b7280');
+        link.core.material.opacity = 0.2;
+        return;
+      }
+
+      link.shell.material.color.set(state === 'warn' ? '#13273f' : '#102744');
+      link.shell.material.emissive.set(state === 'warn' ? '#3b1d04' : '#0a2e55');
+      link.shell.material.emissiveIntensity = state === 'warn' ? 0.24 : 0.2;
+      link.shell.material.opacity = 0.62;
+      link.core.material.color.set(state === 'warn' ? '#f59e0b' : '#49f4ff');
+      link.core.material.opacity = state === 'warn' ? 0.78 : 0.96;
     });
   }
 
@@ -357,6 +502,46 @@ export class HomelabScene {
     this.desiredCamera.copy(this.camera.position);
   }
 
+  animatePackets(elapsed) {
+    this.linkPackets.forEach((link) => {
+      if (link.state === 'down') {
+        link.packets.forEach((packet) => {
+          packet.group.visible = false;
+        });
+        return;
+      }
+
+      const config = packetConfigForState(link.state);
+      link.packets.forEach((packet, index) => {
+        if (index >= config.count) {
+          packet.group.visible = false;
+          return;
+        }
+
+        const travel = link.state === 'warn'
+          ? (elapsed * config.speed + packet.offset * config.spacing + packet.jitter) % 1
+          : (elapsed * config.speed + packet.offset) % 1;
+
+        const headPoint = link.curve.getPointAt(travel);
+        const tailPointOne = link.curve.getPointAt((travel - 0.02 + 1) % 1);
+        const tailPointTwo = link.curve.getPointAt((travel - 0.038 + 1) % 1);
+
+        packet.group.visible = true;
+        packet.group.position.copy(headPoint);
+        packet.head.position.set(0, 0, 0);
+        packet.tailOne.position.copy(tailPointOne.clone().sub(headPoint));
+        packet.tailTwo.position.copy(tailPointTwo.clone().sub(headPoint));
+
+        packet.head.material.color.copy(config.color);
+        packet.tailOne.material.color.copy(config.color);
+        packet.tailTwo.material.color.copy(config.color);
+        packet.head.material.opacity = link.state === 'warn' ? 0.9 : 0.98;
+        packet.tailOne.material.opacity = link.state === 'warn' ? 0.42 : 0.3;
+        packet.tailTwo.material.opacity = link.state === 'warn' ? 0.26 : 0.16;
+      });
+    });
+  }
+
   animate() {
     const elapsed = this.clock.getElapsedTime();
 
@@ -366,6 +551,7 @@ export class HomelabScene {
     }
     this.controls.update();
     this.particles.rotation.y = elapsed * 0.015;
+    this.animatePackets(elapsed);
 
     this.nodeMap.forEach((node, nodeId) => {
       const metrics = this.metricsByNode.get(nodeId);
