@@ -65,6 +65,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.get('/api/metrics', async (req, res) => {
+  const serverNow = new Date();
   try {
     const [upResults, cpuResults, memoryResults, hwmonTempResults, thermalZoneTempResults] = await Promise.all([
       queryPrometheus('up{job="raspi-all"}'),
@@ -101,7 +102,8 @@ app.get('/api/metrics', async (req, res) => {
     });
 
     res.json({
-      generatedAt: new Date().toISOString(),
+      generatedAt: serverNow.toISOString(),
+      serverTimeUtc: serverNow.toISOString(),
       prometheusUrl,
       services: serviceLinks(req.hostname),
       nodes: payload,
@@ -115,7 +117,8 @@ app.get('/api/metrics', async (req, res) => {
     res.status(502).json({
       error: 'prometheus_unavailable',
       message: error.message,
-      generatedAt: new Date().toISOString(),
+      generatedAt: serverNow.toISOString(),
+      serverTimeUtc: serverNow.toISOString(),
       nodes: nodes.map((node) => ({
         ...node,
         status: 'down',

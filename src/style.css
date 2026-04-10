@@ -51,6 +51,54 @@ body {
   animation: scan-flicker 700ms ease-out;
 }
 
+.hud-shell {
+  align-items: flex-start;
+}
+
+.header-panel {
+  max-width: min(40rem, calc(100vw - 2rem));
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  border-radius: 1.4rem;
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.46), rgba(2, 6, 23, 0.22));
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.32),
+    0 0 34px rgba(15, 23, 42, 0.16);
+}
+
+.header-copy {
+  max-width: 32rem;
+  line-height: 1.55;
+}
+
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.header-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid rgba(71, 85, 105, 0.35);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.38);
+  color: #cbd5e1;
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.header-chip--time {
+  border-color: rgba(34, 211, 238, 0.24);
+  color: #a5f3fc;
+}
+
 canvas {
   display: block;
 }
@@ -82,9 +130,11 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  padding: 0.65rem 0.85rem;
-  border: 1px solid rgba(56, 189, 248, 0.18);
-  background: rgba(2, 6, 23, 0.78);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  border-radius: 1.2rem;
+  background: rgba(2, 6, 23, 0.34);
+  backdrop-filter: blur(12px);
 }
 
 .utility-row {
@@ -120,8 +170,8 @@ canvas {
 
 .utility-link {
   border-radius: 0.7rem;
-  padding: 0.72rem 0.95rem;
-  font-size: 0.75rem;
+  padding: 0.68rem 0.9rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -246,7 +296,7 @@ canvas {
   gap: 0.65rem;
   border: 1px solid rgba(56, 189, 248, 0.18);
   border-radius: 999px;
-  background: rgba(2, 6, 23, 0.78);
+  background: rgba(2, 6, 23, 0.5);
   padding: 0.72rem 0.95rem;
   color: #e2e8f0;
   font-family: "IBM Plex Mono", "Consolas", monospace;
@@ -304,7 +354,7 @@ canvas {
 .fleet-panel {
   display: flex;
   flex-direction: column;
-  max-height: min(36rem, calc(100vh - 12rem));
+  max-height: min(36rem, calc(100vh - 13.5rem));
   transition:
     opacity 220ms ease,
     transform 220ms ease;
@@ -402,7 +452,14 @@ canvas {
   }
 
   .fleet-panel {
-    top: 10rem;
-    max-height: min(60vh, calc(100vh - 11rem));
+    max-height: min(60vh, calc(100vh - 12rem));
+  }
+
+  .header-panel {
+    max-width: 100%;
+  }
+
+  .utility-bar {
+    width: 100%;
   }
 }

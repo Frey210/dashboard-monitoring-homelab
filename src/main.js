@@ -8,19 +8,23 @@ const MAX_HISTORY = 18;
 
 document.querySelector('#app').innerHTML = `
   <div id="app-shell" class="app-shell relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.16),_transparent_35%)]"></div>
-    <header class="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-4 px-4 pb-4 pt-4 md:px-8">
-      <div class="pointer-events-auto flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-cyan-500/20 bg-slate-950/70 px-5 py-4 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur-xl">
-        <div class="max-w-4xl">
-          <p class="text-xs uppercase tracking-[0.35em] text-cyan-300/80">MTC SERVER INFRASTRUCTURE</p>
-          <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.3em] text-fuchsia-300/70">SYS_OPS // CORE_DIAGNOSTIC_INTERFACE_V1.0</p>
-          <h1 class="mt-2 text-2xl font-semibold text-white md:text-4xl">Gateway Topology and Fleet Telemetry</h1>
-          <p class="mt-2 max-w-3xl text-sm text-slate-300 md:text-base">
-            LINK_ESTABLISHED: Synchronizing pulse-data via Prometheus core. Visualizing gateway topology & node-fleet lifecycle.
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.14),_transparent_36%)]"></div>
+    <header class="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-4 md:px-8">
+      <div class="hud-shell flex flex-wrap items-start justify-between gap-3">
+        <div class="header-panel pointer-events-auto">
+          <p class="text-[11px] uppercase tracking-[0.38em] text-cyan-300/80">MTC SERVER INFRASTRUCTURE</p>
+          <p class="mt-2 font-mono text-[10px] uppercase tracking-[0.3em] text-fuchsia-300/70">SYS_OPS // CORE_DIAGNOSTIC_INTERFACE_V1.0</p>
+          <h1 class="mt-3 text-2xl font-semibold text-white md:text-3xl">Gateway Topology</h1>
+          <p class="header-copy mt-2 text-sm text-slate-300">
+            Prometheus-linked gateway topology and node-fleet telemetry.
           </p>
-          <p class="mt-3 font-mono text-[11px] uppercase tracking-[0.28em] text-slate-400">KERNEL: X86_64 | STATUS: NOMINAL | SECURE_TUNNEL: ACTIVE.</p>
+          <div class="header-meta mt-4">
+            <span class="header-chip">STATUS: NOMINAL</span>
+            <span class="header-chip">TUNNEL: ACTIVE</span>
+            <span id="server-time" class="header-chip header-chip--time">SERVER_TIME: --</span>
+          </div>
         </div>
-        <div class="utility-bar">
+        <div class="utility-bar pointer-events-auto">
           <div class="utility-row">
             <button data-link="grafana" class="utility-link">Open Grafana</button>
             <button data-link="prometheus" class="utility-link">Open Prometheus</button>
@@ -34,11 +38,11 @@ document.querySelector('#app').innerHTML = `
     </header>
     <main class="relative z-10 min-h-screen">
       <section id="scene-host" class="absolute inset-0"></section>
-      <button id="fleet-toggle" class="fleet-toggle pointer-events-auto absolute right-4 top-28 z-30 md:right-8 md:top-36" aria-expanded="true" aria-controls="fleet-panel">
+      <button id="fleet-toggle" class="fleet-toggle pointer-events-auto absolute right-4 top-[8.25rem] z-40 md:right-8 md:top-[8.25rem]" aria-expanded="true" aria-controls="fleet-panel">
         <span class="fleet-toggle__icon" aria-hidden="true"></span>
-        <span class="fleet-toggle__label">Fleet</span>
+        <span class="fleet-toggle__label">Hide Fleet</span>
       </button>
-      <aside id="selected-node-panel" class="selected-panel is-hidden pointer-events-auto absolute bottom-4 left-4 z-20 w-[min(100%-2rem,24rem)] rounded-2xl border border-slate-800/80 bg-slate-950/75 p-4 shadow-[0_0_45px_rgba(14,165,233,0.12)] backdrop-blur-xl md:bottom-8 md:left-8">
+      <aside id="selected-node-panel" class="selected-panel is-hidden pointer-events-auto absolute bottom-4 left-4 z-20 w-[min(100%-2rem,24rem)] rounded-2xl border border-slate-800/80 bg-slate-950/60 p-4 shadow-[0_0_45px_rgba(14,165,233,0.12)] backdrop-blur-xl md:bottom-8 md:left-8">
         <div class="flex items-start justify-between gap-3">
           <div>
             <p class="text-xs uppercase tracking-[0.3em] text-cyan-300/75">Selected Node</p>
@@ -69,7 +73,7 @@ document.querySelector('#app').innerHTML = `
           <button id="refresh-now" class="action-button">Refresh Now</button>
         </div>
       </aside>
-      <section id="fleet-panel" class="fleet-panel pointer-events-auto absolute right-4 top-44 z-20 w-[min(100%-2rem,26rem)] rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4 shadow-[0_0_40px_rgba(168,85,247,0.1)] backdrop-blur-xl md:right-8 md:top-44">
+      <section id="fleet-panel" class="fleet-panel pointer-events-auto absolute right-4 top-[10.75rem] z-20 w-[min(100%-2rem,26rem)] rounded-2xl border border-slate-800/80 bg-slate-950/58 p-4 shadow-[0_0_40px_rgba(168,85,247,0.08)] backdrop-blur-xl md:right-8 md:top-[10.75rem]">
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-xs uppercase tracking-[0.3em] text-fuchsia-300/75">Realtime Status</p>
@@ -94,6 +98,7 @@ const selectedNodeState = document.querySelector('#selected-node-state');
 const selectedNodeCpu = document.querySelector('#selected-node-cpu');
 const selectedNodeMemory = document.querySelector('#selected-node-memory');
 const selectedNodeTemperature = document.querySelector('#selected-node-temperature');
+const serverTime = document.querySelector('#server-time');
 const lastUpdated = document.querySelector('#last-updated');
 const tooltip = document.querySelector('#tooltip');
 const sceneHost = document.querySelector('#scene-host');
@@ -158,6 +163,23 @@ function formatTemperature(value) {
     return '--';
   }
   return `${Math.round(value)}C`;
+}
+
+function formatServerTime(isoValue) {
+  if (!isoValue) {
+    return 'SERVER_TIME: --';
+  }
+
+  return `SERVER_TIME: ${new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date(isoValue))} UTC`;
 }
 
 function updateHistory(nodes) {
@@ -330,6 +352,7 @@ async function fetchMetrics() {
   scene.update(metrics);
   renderNodeCards(metrics);
   lastUpdated.textContent = `Updated ${new Date(metrics.generatedAt).toLocaleTimeString()}`;
+  serverTime.textContent = formatServerTime(metrics.serverTimeUtc ?? metrics.generatedAt);
 
   if (!currentSelection) {
     return;
