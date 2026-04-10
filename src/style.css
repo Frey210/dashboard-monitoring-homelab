@@ -319,6 +319,38 @@ canvas {
 .fleet-panel__body {
   overflow-y: auto;
   padding-right: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.72) rgba(15, 23, 42, 0.78);
+}
+
+.fleet-panel__body::-webkit-scrollbar {
+  width: 0.7rem;
+}
+
+.fleet-panel__body::-webkit-scrollbar-track {
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.95), rgba(15, 23, 42, 0.82));
+  border-left: 1px solid rgba(34, 211, 238, 0.12);
+  border-radius: 999px;
+}
+
+.fleet-panel__body::-webkit-scrollbar-thumb {
+  background:
+    linear-gradient(180deg, rgba(34, 211, 238, 0.92), rgba(168, 85, 247, 0.82));
+  border: 2px solid rgba(2, 6, 23, 0.92);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.22),
+    0 0 18px rgba(34, 211, 238, 0.18);
+}
+
+.fleet-panel__body::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, rgba(103, 232, 249, 0.96), rgba(192, 132, 252, 0.9));
+}
+
+.fleet-panel__body::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .panel-dismiss {
