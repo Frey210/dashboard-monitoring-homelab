@@ -12,25 +12,19 @@ document.querySelector('#app').innerHTML = `
     <header class="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-4 md:px-8">
       <div class="hud-shell flex flex-wrap items-start justify-between gap-3">
         <div class="header-panel pointer-events-auto">
-          <div class="header-panel__mobile mobile-only">
-            <img src="/logo-mtc.png" alt="MTC" class="header-logo" />
-            <span id="server-time-mobile" class="header-chip header-chip--time">SERVER_TIME: --</span>
-          </div>
-          <div class="header-panel__desktop desktop-only">
-            <p class="text-[11px] uppercase tracking-[0.38em] text-cyan-300/80">MTC SERVER INFRASTRUCTURE</p>
-            <p class="mt-2 font-mono text-[10px] uppercase tracking-[0.3em] text-fuchsia-300/70">SYS_OPS // CORE_DIAGNOSTIC_INTERFACE_V1.0</p>
-            <h1 class="mt-3 text-2xl font-semibold text-white md:text-3xl">Gateway Topology</h1>
-            <p class="header-copy mt-2 text-sm text-slate-300">
-              Prometheus-linked gateway topology and node-fleet telemetry.
-            </p>
-            <div class="header-meta mt-4">
-              <span class="header-chip">STATUS: NOMINAL</span>
-              <span class="header-chip">TUNNEL: ACTIVE</span>
-              <span id="server-time" class="header-chip header-chip--time">SERVER_TIME: --</span>
-            </div>
+          <p class="text-[11px] uppercase tracking-[0.38em] text-cyan-300/80">MTC SERVER INFRASTRUCTURE</p>
+          <p class="mt-2 font-mono text-[10px] uppercase tracking-[0.3em] text-fuchsia-300/70">SYS_OPS // CORE_DIAGNOSTIC_INTERFACE_V1.0</p>
+          <h1 class="mt-3 text-2xl font-semibold text-white md:text-3xl">Gateway Topology</h1>
+          <p class="header-copy mt-2 text-sm text-slate-300">
+            Prometheus-linked gateway topology and node-fleet telemetry.
+          </p>
+          <div class="header-meta mt-4">
+            <span class="header-chip">STATUS: NOMINAL</span>
+            <span class="header-chip">TUNNEL: ACTIVE</span>
+            <span id="server-time" class="header-chip header-chip--time">SERVER_TIME: --</span>
           </div>
         </div>
-        <div class="utility-bar pointer-events-auto desktop-only">
+        <div class="utility-bar pointer-events-auto">
           <div class="utility-row">
             <button data-link="grafana" class="utility-link">Open Grafana</button>
             <button data-link="prometheus" class="utility-link">Open Prometheus</button>
@@ -46,8 +40,7 @@ document.querySelector('#app').innerHTML = `
       <section id="scene-host" class="absolute inset-0"></section>
       <button id="fleet-toggle" class="fleet-toggle pointer-events-auto absolute right-4 top-[8.25rem] z-40 md:right-8 md:top-[8.25rem]" aria-expanded="true" aria-controls="fleet-panel">
         <span class="fleet-toggle__icon" aria-hidden="true"></span>
-        <span class="fleet-toggle__label desktop-only">Hide Fleet</span>
-        <span class="fleet-toggle__label mobile-only">Node Fleet</span>
+        <span class="fleet-toggle__label">Hide Fleet</span>
       </button>
       <aside id="selected-node-panel" class="selected-panel is-hidden pointer-events-auto absolute bottom-4 left-4 z-20 w-[min(100%-2rem,24rem)] rounded-2xl border border-slate-800/80 bg-slate-950/60 p-4 shadow-[0_0_45px_rgba(14,165,233,0.12)] backdrop-blur-xl md:bottom-8 md:left-8">
         <div class="flex items-start justify-between gap-3">
@@ -66,7 +59,7 @@ document.querySelector('#app').innerHTML = `
             <span class="metric-label">CPU Load</span>
             <strong id="selected-node-cpu" class="metric-value tech-copy">0%</strong>
           </div>
-          <div class="metric-tile metric-tile--secondary">
+          <div class="metric-tile">
             <span class="metric-label">Memory</span>
             <strong id="selected-node-memory" class="metric-value tech-copy">0%</strong>
           </div>
@@ -88,16 +81,6 @@ document.querySelector('#app').innerHTML = `
           </div>
           <div id="last-updated" class="tech-copy text-xs text-slate-400">Waiting for metrics...</div>
         </div>
-        <div class="mobile-actions mobile-only mt-4">
-          <div class="mobile-actions__row">
-            <button data-link="grafana" class="utility-link utility-link--compact">Grafana</button>
-            <button data-link="prometheus" class="utility-link utility-link--compact">Prometheus</button>
-            <button id="toggle-rotate-mobile" class="utility-link utility-link--secondary utility-link--compact">Pause Orbit</button>
-          </div>
-          <div class="mobile-actions__row">
-            ${ADMIN_LINKS.map((link) => `<button data-external-link="${link.url}" class="utility-link utility-link--ghost utility-link--compact">${link.label}</button>`).join('')}
-          </div>
-        </div>
         <div class="fleet-panel__body mt-4">
           <div id="node-grid" class="grid gap-3 sm:grid-cols-2"></div>
         </div>
@@ -115,15 +98,13 @@ const selectedNodeState = document.querySelector('#selected-node-state');
 const selectedNodeCpu = document.querySelector('#selected-node-cpu');
 const selectedNodeMemory = document.querySelector('#selected-node-memory');
 const selectedNodeTemperature = document.querySelector('#selected-node-temperature');
-const desktopServerTime = document.querySelector('#server-time');
-const mobileServerTime = document.querySelector('#server-time-mobile');
+const serverTime = document.querySelector('#server-time');
 const lastUpdated = document.querySelector('#last-updated');
 const tooltip = document.querySelector('#tooltip');
 const sceneHost = document.querySelector('#scene-host');
 const openNodeService = document.querySelector('#open-node-service');
 const refreshNow = document.querySelector('#refresh-now');
 const toggleRotate = document.querySelector('#toggle-rotate');
-const toggleRotateMobile = document.querySelector('#toggle-rotate-mobile');
 const fleetToggle = document.querySelector('#fleet-toggle');
 const fleetPanel = document.querySelector('#fleet-panel');
 const clearSelectionButton = document.querySelector('#clear-selection');
@@ -132,8 +113,6 @@ const appShell = document.querySelector('#app-shell');
 let currentSelection = null;
 let autoRotate = true;
 let fleetOpen = true;
-let isMobileViewport = window.innerWidth < 768;
-let latestMetrics = null;
 let pollHandle = null;
 let scanPulseHandle = null;
 const metricHistory = new Map();
@@ -258,30 +237,6 @@ function renderNodeCards(metrics) {
     const history = metricHistory.get(node.id) ?? { cpu: [], memory: [] };
     const tempTone = temperatureTone(temperature);
 
-    if (isMobileViewport) {
-      return `
-        <button data-node-id="${node.id}" class="node-card node-card--mobile">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="text-sm font-semibold text-white">${node.label}</div>
-              <div class="tech-copy mt-1 text-[11px] text-slate-400">${node.ip}</div>
-            </div>
-            <span class="rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${badgeForState(state)}">${state}</span>
-          </div>
-          <div class="mt-3 grid grid-cols-2 gap-2 text-left text-[11px] text-slate-300">
-            <div class="rounded-xl bg-slate-900/90 p-2">
-              <div class="metric-chip-label">CPU</div>
-              <div class="tech-copy mt-1 font-semibold text-cyan-200">${formatPercent(cpu)}</div>
-            </div>
-            <div class="rounded-xl bg-slate-900/90 p-2">
-              <div class="metric-chip-label">TEMP</div>
-              <div class="tech-copy mt-1 font-semibold ${tempTone.className}">${formatTemperature(temperature)}</div>
-            </div>
-          </div>
-        </button>
-      `;
-    }
-
     return `
       <button data-node-id="${node.id}" class="node-card">
         <div class="flex items-start justify-between gap-3">
@@ -347,9 +302,6 @@ function setSelection(snapshot, { focus = false } = {}) {
 
   currentSelection = snapshot;
   renderSelection(snapshot);
-  if (isMobileViewport) {
-    setFleetOpen(false);
-  }
 
   if (focus) {
     scene.focusNode(snapshot.id);
@@ -357,7 +309,7 @@ function setSelection(snapshot, { focus = false } = {}) {
 }
 
 function setTooltip(snapshot, event) {
-  if (!snapshot || !event || isMobileViewport) {
+  if (!snapshot || !event) {
     tooltip.classList.add('hidden');
     return;
   }
@@ -372,44 +324,11 @@ function setFleetOpen(nextState) {
   fleetOpen = nextState;
   fleetPanel.classList.toggle('is-collapsed', !fleetOpen);
   fleetToggle.setAttribute('aria-expanded', String(fleetOpen));
-  const desktopLabel = fleetToggle.querySelector('.fleet-toggle__label.desktop-only');
-  const mobileLabel = fleetToggle.querySelector('.fleet-toggle__label.mobile-only');
-  if (desktopLabel) {
-    desktopLabel.textContent = fleetOpen ? 'Hide Fleet' : 'Show Fleet';
-  }
-  if (mobileLabel) {
-    mobileLabel.textContent = fleetOpen ? 'Close Fleet' : 'Node Fleet';
-  }
-}
-
-function applyViewportMode(forceState) {
-  const nextIsMobile = forceState ?? window.innerWidth < 768;
-  const changed = nextIsMobile !== isMobileViewport;
-  isMobileViewport = nextIsMobile;
-  appShell.classList.toggle('is-mobile', isMobileViewport);
-  scene.setViewportMode(isMobileViewport);
-
-  if (changed) {
-    setFleetOpen(!isMobileViewport);
-    if (!currentSelection) {
-      renderSelection(null);
-    }
-  }
-
-  if (latestMetrics) {
-    renderNodeCards(latestMetrics);
-    if (currentSelection) {
-      const refreshedSelection = latestMetrics.nodes.find((node) => node.id === currentSelection.id);
-      if (refreshedSelection) {
-        renderSelection(refreshedSelection);
-      }
-    }
-  }
+  fleetToggle.querySelector('.fleet-toggle__label').textContent = fleetOpen ? 'Hide Fleet' : 'Show Fleet';
 }
 
 const scene = new HomelabScene({
   mount: sceneHost,
-  isMobile: isMobileViewport,
   onNodeHover: (snapshot, event) => setTooltip(snapshot, event),
   onNodeSelect: (snapshot) => {
     if (currentSelection?.id === snapshot.id) {
@@ -429,18 +348,11 @@ const scene = new HomelabScene({
 async function fetchMetrics() {
   const response = await axios.get('/api/metrics');
   const metrics = response.data;
-  latestMetrics = metrics;
   updateHistory(metrics.nodes);
   scene.update(metrics);
   renderNodeCards(metrics);
   lastUpdated.textContent = `Updated ${new Date(metrics.generatedAt).toLocaleTimeString()}`;
-  const serverTimeText = formatServerTime(metrics.serverTimeUtc ?? metrics.generatedAt);
-  if (desktopServerTime) {
-    desktopServerTime.textContent = serverTimeText;
-  }
-  if (mobileServerTime) {
-    mobileServerTime.textContent = serverTimeText;
-  }
+  serverTime.textContent = formatServerTime(metrics.serverTimeUtc ?? metrics.generatedAt);
 
   if (!currentSelection) {
     return;
@@ -466,22 +378,10 @@ async function refreshWithGuard({ animate = false } = {}) {
   }
 }
 
-function syncRotateLabels() {
-  const label = autoRotate ? 'Pause Orbit' : 'Resume Orbit';
-  if (toggleRotate) {
-    toggleRotate.textContent = label;
-  }
-  if (toggleRotateMobile) {
-    toggleRotateMobile.textContent = label;
-  }
-}
-
 pollHandle = window.setInterval(() => refreshWithGuard(), 5000);
 refreshWithGuard({ animate: true });
-setFleetOpen(!isMobileViewport);
+setFleetOpen(true);
 renderSelection(null);
-applyViewportMode(isMobileViewport);
-syncRotateLabels();
 
 document.querySelectorAll('[data-link]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -505,12 +405,10 @@ clearSelectionButton.addEventListener('click', clearSelection);
 refreshNow.addEventListener('click', () => refreshWithGuard({ animate: true }));
 fleetToggle.addEventListener('click', () => setFleetOpen(!fleetOpen));
 
-[toggleRotate, toggleRotateMobile].filter(Boolean).forEach((button) => {
-  button.addEventListener('click', () => {
-    autoRotate = !autoRotate;
-    scene.setAutoRotate(autoRotate);
-    syncRotateLabels();
-  });
+toggleRotate.addEventListener('click', () => {
+  autoRotate = !autoRotate;
+  scene.setAutoRotate(autoRotate);
+  toggleRotate.textContent = autoRotate ? 'Pause Orbit' : 'Resume Orbit';
 });
 
 nodeGrid.addEventListener('click', (event) => {
@@ -527,8 +425,6 @@ nodeGrid.addEventListener('click', (event) => {
 
   setSelection(scene.snapshot(targetId), { focus: true });
 });
-
-window.addEventListener('resize', () => applyViewportMode());
 
 window.addEventListener('beforeunload', () => {
   window.clearInterval(pollHandle);
