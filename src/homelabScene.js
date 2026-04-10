@@ -51,7 +51,7 @@ function createFiberCurve(from, to) {
   return new THREE.CatmullRomCurve3([from.clone(), midpoint, to.clone()]);
 }
 
-function createPacketMaterial(color, intensity, opacity = 1) {
+function createPacketMaterial(color, opacity = 1) {
   return new THREE.MeshBasicMaterial({
     color,
     transparent: opacity < 1,
@@ -79,11 +79,12 @@ function packetConfigForState(state) {
 }
 
 export class HomelabScene {
-  constructor({ mount, onNodeHover, onNodeSelect, onBackgroundSelect }) {
+  constructor({ mount, onNodeHover, onNodeSelect, onBackgroundSelect, isMobile = false }) {
     this.mount = mount;
     this.onNodeHover = onNodeHover;
     this.onNodeSelect = onNodeSelect;
     this.onBackgroundSelect = onBackgroundSelect;
+    this.isMobile = isMobile;
     this.clock = new THREE.Clock();
     this.pointer = new THREE.Vector2();
     this.raycaster = new THREE.Raycaster();
@@ -92,11 +93,13 @@ export class HomelabScene {
     this.hoveredNodeId = null;
     this.selectedNodeId = null;
     this.autoRotate = true;
-    this.defaultTarget = new THREE.Vector3(-5.4, 2.4, 0);
-    this.desiredTarget = this.defaultTarget.clone();
-    this.defaultCamera = new THREE.Vector3(22, 18, 24);
-    this.desiredCamera = this.defaultCamera.clone();
     this.linkPackets = [];
+    this.desktopTarget = new THREE.Vector3(-5.4, 2.4, 0);
+    this.desktopCamera = new THREE.Vector3(22, 18, 24);
+    this.desiredTarget = this.desktopTarget.clone();
+    this.desiredCamera = this.desktopCamera.clone();
+    this.frameCapMs = 0;
+    this.lastFrameAt = 0;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(NEON.background);
@@ -106,37 +109,34 @@ export class HomelabScene {
       55,
       mount.clientWidth / Math.max(mount.clientHeight, 1),
       0.1,
-      200,
+      240,
     );
-    this.camera.position.copy(this.defaultCamera);
+    this.camera.position.copy(this.desktopCamera);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(mount.clientWidth, mount.clientHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     mount.appendChild(this.renderer.domElement);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.minDistance = 12;
-    this.controls.maxDistance = 42;
-    this.controls.autoRotate = this.autoRotate;
-    this.controls.autoRotateSpeed = 0.55;
-    this.controls.target.copy(this.defaultTarget);
+    this.controls.enablePan = false;
+    this.controls.minDistance = 8;
+    this.controls.maxDistance = 52;
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.composer.addPass(
-      new UnrealBloomPass(
-        new THREE.Vector2(mount.clientWidth, mount.clientHeight),
-        1.15,
-        0.75,
-        0.15,
-      ),
+    this.bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(mount.clientWidth, mount.clientHeight),
+      1.15,
+      0.75,
+      0.15,
     );
+    this.composer.addPass(this.bloomPass);
 
     this.setupEnvironment();
     this.setupNodes();
+    this.applyViewportMode(this.isMobile, { immediate: true });
+    this.setupBatteryOptimization();
     this.setupEvents();
     this.animate = this.animate.bind(this);
     this.animate();
@@ -197,6 +197,7 @@ export class HomelabScene {
 
     const gatewayPosition = new THREE.Vector3(...NODE_LAYOUT.find((node) => node.id === 'gateway').position);
     const monitoringPosition = new THREE.Vector3(...NODE_LAYOUT.find((node) => node.id === 'aqn-node1').position);
+    this.gatewayPosition = gatewayPosition.clone();
 
     NODE_LAYOUT.forEach((node) => {
       const group = new THREE.Group();
@@ -305,16 +306,15 @@ export class HomelabScene {
       const packet = new THREE.Group();
       const head = new THREE.Mesh(
         new THREE.SphereGeometry(0.12, 16, 16),
-        createPacketMaterial('#52f7ff', 1, 0.96),
+        createPacketMaterial('#52f7ff', 0.96),
       );
-
       const tailOne = new THREE.Mesh(
         new THREE.SphereGeometry(0.08, 12, 12),
-        createPacketMaterial('#52f7ff', 1, 0.32),
+        createPacketMaterial('#52f7ff', 0.32),
       );
       const tailTwo = new THREE.Mesh(
         new THREE.SphereGeometry(0.055, 10, 10),
-        createPacketMaterial('#52f7ff', 1, 0.18),
+        createPacketMaterial('#52f7ff', 0.18),
       );
 
       packet.add(head, tailOne, tailTwo);
@@ -346,6 +346,117 @@ export class HomelabScene {
     return link;
   }
 
+  calculateOverviewPose() {
+    if (!this.isMobile) {
+      return {
+        target: this.desktopTarget.clone(),
+        camera: this.desktopCamera.clone(),
+      };
+    }
+
+    const bounds = new THREE.Box3();
+    NODE_LAYOUT.forEach((node) => {
+      bounds.expandByPoint(new THREE.Vector3(...node.position));
+    });
+
+    const size = bounds.getSize(new THREE.Vector3());
+    const radius = Math.max(size.x, size.z, size.y * 1.5) * 0.62 + 6;
+    const aspect = this.mount.clientWidth / Math.max(this.mount.clientHeight, 1);
+    const fovRadians = THREE.MathUtils.degToRad(this.camera.fov);
+    const fitHeightDistance = radius / Math.tan(fovRadians / 2);
+    const fitWidthDistance = fitHeightDistance / Math.max(aspect, 0.62);
+    const distance = Math.max(fitHeightDistance, fitWidthDistance) * 0.86;
+    const target = this.gatewayPosition.clone().add(new THREE.Vector3(0, 1.1, 0));
+    const direction = new THREE.Vector3(0, 1.9, 1.08).normalize();
+    const camera = target.clone().add(direction.multiplyScalar(distance));
+
+    return { target, camera };
+  }
+
+  calculateFocusPose(nodeId) {
+    const node = this.nodeMap.get(nodeId);
+    if (!node) {
+      return null;
+    }
+
+    if (this.isMobile) {
+      const target = node.group.position.clone().add(new THREE.Vector3(0, 0.65, 0));
+      const direction = new THREE.Vector3(0, 1.05, 1.18).normalize();
+      const camera = target.clone().add(direction.multiplyScalar(8.4));
+      return { target, camera };
+    }
+
+    const focusBias = new THREE.Vector3(-2.8, 1.2, 0);
+    const currentDirection = this.camera.position.clone().sub(this.controls.target).normalize();
+    const focusDistance = THREE.MathUtils.clamp(
+      this.camera.position.distanceTo(this.controls.target),
+      16,
+      28,
+    );
+    const target = node.group.position.clone().add(focusBias);
+    const camera = target.clone().add(currentDirection.multiplyScalar(focusDistance));
+    camera.y = Math.max(camera.y, target.y + 7);
+    return { target, camera };
+  }
+
+  applyControlsProfile() {
+    this.controls.dampingFactor = this.isMobile ? 0.14 : 0.08;
+    this.controls.rotateSpeed = this.isMobile ? 1.22 : 0.9;
+    this.controls.autoRotateSpeed = this.isMobile ? 0.36 : 0.55;
+    this.controls.enableRotate = !this.selectedNodeId;
+    this.controls.autoRotate = !this.selectedNodeId && this.autoRotate;
+    this.controls.minDistance = this.isMobile ? 6 : 12;
+    this.controls.maxDistance = this.isMobile ? 48 : 52;
+  }
+
+  applyPerformanceProfile() {
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isMobile ? 1.35 : 2));
+    this.bloomPass.strength = this.isMobile ? 0.8 : 1.15;
+    this.bloomPass.radius = this.isMobile ? 0.55 : 0.75;
+    this.frameCapMs = this.isMobile && this.lowPowerMode ? 1000 / 30 : 0;
+  }
+
+  applyViewportMode(isMobile, { immediate = false } = {}) {
+    this.isMobile = isMobile;
+    this.applyControlsProfile();
+    this.applyPerformanceProfile();
+
+    if (this.selectedNodeId) {
+      const pose = this.calculateFocusPose(this.selectedNodeId);
+      if (pose) {
+        this.desiredTarget.copy(pose.target);
+        this.desiredCamera.copy(pose.camera);
+      }
+    } else {
+      const pose = this.calculateOverviewPose();
+      this.desiredTarget.copy(pose.target);
+      this.desiredCamera.copy(pose.camera);
+    }
+
+    if (immediate) {
+      this.controls.target.copy(this.desiredTarget);
+      this.camera.position.copy(this.desiredCamera);
+    }
+  }
+
+  setupBatteryOptimization() {
+    this.lowPowerMode = false;
+    if (!navigator.getBattery) {
+      return;
+    }
+
+    navigator.getBattery().then((battery) => {
+      const syncBattery = () => {
+        this.lowPowerMode = !battery.charging && battery.level <= 0.25;
+        this.applyPerformanceProfile();
+      };
+
+      syncBattery();
+      battery.addEventListener('chargingchange', syncBattery);
+      battery.addEventListener('levelchange', syncBattery);
+    }).catch(() => {});
+  }
+
   setupEvents() {
     this.handleResize = () => {
       const { clientWidth, clientHeight } = this.mount;
@@ -353,6 +464,7 @@ export class HomelabScene {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(clientWidth, clientHeight);
       this.composer.setSize(clientWidth, clientHeight);
+      this.applyViewportMode(window.innerWidth < 768);
     };
 
     this.handleMove = (event) => {
@@ -471,40 +583,33 @@ export class HomelabScene {
     }
   }
 
+  setViewportMode(isMobile) {
+    this.applyViewportMode(isMobile);
+  }
+
   focusNode(nodeId) {
-    const node = this.nodeMap.get(nodeId);
-    if (!node) {
+    const pose = this.calculateFocusPose(nodeId);
+    if (!pose) {
       return;
     }
 
     this.selectedNodeId = nodeId;
-    this.controls.autoRotate = false;
-    this.controls.enableRotate = false;
-
-    const focusBias = new THREE.Vector3(-2.8, 1.2, 0);
-    const currentDirection = this.camera.position.clone().sub(this.controls.target).normalize();
-    const focusDistance = THREE.MathUtils.clamp(
-      this.camera.position.distanceTo(this.controls.target),
-      16,
-      28,
-    );
-
-    this.desiredTarget.copy(node.group.position).add(focusBias);
-    this.desiredCamera.copy(this.desiredTarget).add(currentDirection.multiplyScalar(focusDistance));
-    this.desiredCamera.y = Math.max(this.desiredCamera.y, this.desiredTarget.y + 7);
+    this.applyControlsProfile();
+    this.desiredTarget.copy(pose.target);
+    this.desiredCamera.copy(pose.camera);
   }
 
   clearFocus() {
     this.selectedNodeId = null;
-    this.controls.enableRotate = true;
-    this.controls.autoRotate = this.autoRotate;
-    this.desiredTarget.copy(this.defaultTarget);
-    this.desiredCamera.copy(this.camera.position);
+    this.applyControlsProfile();
+    const pose = this.calculateOverviewPose();
+    this.desiredTarget.copy(pose.target);
+    this.desiredCamera.copy(pose.camera);
   }
 
   animatePackets(elapsed) {
     this.linkPackets.forEach((link) => {
-      if (link.state === 'down') {
+      if (link.state === 'down' || (this.isMobile && link.emphasis === 'cluster-core')) {
         link.packets.forEach((packet) => {
           packet.group.visible = false;
         });
@@ -542,13 +647,17 @@ export class HomelabScene {
     });
   }
 
-  animate() {
+  animate(now = 0) {
+    this.animationFrame = requestAnimationFrame(this.animate);
+    if (this.frameCapMs && now - this.lastFrameAt < this.frameCapMs) {
+      return;
+    }
+    this.lastFrameAt = now;
+
     const elapsed = this.clock.getElapsedTime();
 
-    this.controls.target.lerp(this.desiredTarget, this.selectedNodeId ? 0.075 : 0.045);
-    if (this.selectedNodeId) {
-      this.camera.position.lerp(this.desiredCamera, 0.055);
-    }
+    this.controls.target.lerp(this.desiredTarget, this.selectedNodeId ? 0.09 : 0.055);
+    this.camera.position.lerp(this.desiredCamera, this.selectedNodeId ? 0.08 : 0.05);
     this.controls.update();
     this.particles.rotation.y = elapsed * 0.015;
     this.animatePackets(elapsed);
@@ -572,7 +681,6 @@ export class HomelabScene {
     });
 
     this.composer.render();
-    this.animationFrame = requestAnimationFrame(this.animate);
   }
 
   destroy() {
