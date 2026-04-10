@@ -32,21 +32,23 @@ function stateFromMetrics(metrics) {
 }
 
 export class HomelabScene {
-  constructor({ mount, onNodeHover, onNodeSelect }) {
+  constructor({ mount, onNodeHover, onNodeSelect, onBackgroundSelect }) {
     this.mount = mount;
     this.onNodeHover = onNodeHover;
     this.onNodeSelect = onNodeSelect;
+    this.onBackgroundSelect = onBackgroundSelect;
     this.clock = new THREE.Clock();
     this.pointer = new THREE.Vector2();
     this.raycaster = new THREE.Raycaster();
     this.nodeMap = new Map();
     this.metricsByNode = new Map();
     this.hoveredNodeId = null;
-    this.selectedNodeId = 'aqn-node1';
+    this.selectedNodeId = null;
     this.autoRotate = true;
     this.defaultTarget = new THREE.Vector3(-4.8, 2.4, 0);
     this.desiredTarget = this.defaultTarget.clone();
-    this.desiredCamera = new THREE.Vector3(22, 18, 24);
+    this.defaultCamera = new THREE.Vector3(22, 18, 24);
+    this.desiredCamera = this.defaultCamera.clone();
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(NEON.background);
@@ -58,7 +60,7 @@ export class HomelabScene {
       0.1,
       200,
     );
-    this.camera.position.copy(this.desiredCamera);
+    this.camera.position.copy(this.defaultCamera);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -244,16 +246,15 @@ export class HomelabScene {
     this.handleClick = (event) => {
       this.updatePointer(event);
       const hit = this.getIntersectedNode();
-      const nodeId = hit?.object?.userData?.nodeId;
+      const nodeId = hit?.object?.userData?.nodeId ?? null;
+
       if (!nodeId) {
+        this.onBackgroundSelect?.();
         return;
       }
 
       const snapshot = this.snapshot(nodeId);
-      this.selectedNodeId = nodeId;
-      this.focusNode(nodeId);
       this.onNodeSelect?.(snapshot);
-      window.open(snapshot.serviceUrl, '_blank', 'noopener,noreferrer');
     };
 
     window.addEventListener('resize', this.handleResize);
@@ -320,17 +321,21 @@ export class HomelabScene {
 
   setAutoRotate(enabled) {
     this.autoRotate = enabled;
-    this.controls.autoRotate = enabled;
+    if (!this.selectedNodeId) {
+      this.controls.autoRotate = enabled;
+    }
   }
 
   focusNode(nodeId) {
     const node = this.nodeMap.get(nodeId);
     if (!node) {
-      this.desiredTarget.copy(this.defaultTarget);
       return;
     }
 
     this.selectedNodeId = nodeId;
+    this.controls.autoRotate = false;
+    this.controls.enableRotate = false;
+
     const focusBias = new THREE.Vector3(-2.8, 1.2, 0);
     const currentDirection = this.camera.position.clone().sub(this.controls.target).normalize();
     const focusDistance = THREE.MathUtils.clamp(
@@ -342,6 +347,14 @@ export class HomelabScene {
     this.desiredTarget.copy(node.group.position).add(focusBias);
     this.desiredCamera.copy(this.desiredTarget).add(currentDirection.multiplyScalar(focusDistance));
     this.desiredCamera.y = Math.max(this.desiredCamera.y, this.desiredTarget.y + 7);
+  }
+
+  clearFocus() {
+    this.selectedNodeId = null;
+    this.controls.enableRotate = true;
+    this.controls.autoRotate = this.autoRotate;
+    this.desiredTarget.copy(this.defaultTarget);
+    this.desiredCamera.copy(this.defaultCamera);
   }
 
   animate() {

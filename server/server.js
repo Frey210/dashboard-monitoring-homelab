@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 
 const nodes = [
   { id: 'gateway', node: 'gateway', label: 'Gateway', ip: '192.168.8.1' },
-  { id: 'aqn-node1', node: 'aqn-node1', label: 'Monitoring Core', ip: '192.168.8.101' },
+  { id: 'aqn-node1', node: 'aqn-node1', label: 'aqn-node1', ip: '192.168.8.101' },
   { id: 'aqn-node2', node: 'aqn-node2', label: 'aqn-node2', ip: '192.168.8.102' },
   { id: 'aqn-node3', node: 'aqn-node3', label: 'aqn-node3', ip: '192.168.8.103' },
   { id: 'aqn-node4', node: 'aqn-node4', label: 'aqn-node4', ip: '192.168.8.104' },

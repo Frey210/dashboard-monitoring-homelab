@@ -10,7 +10,7 @@ export const NODE_LAYOUT = [
   },
   {
     id: 'aqn-node1',
-    label: 'Monitoring Core',
+    label: 'aqn-node1',
     node: 'aqn-node1',
     ip: '192.168.8.101',
     kind: 'monitoring',
@@ -95,3 +95,21 @@ export function getLinksForHost(hostname) {
     prometheus: `http://${currentHost}:9090`,
   };
 }
+
+export const ADMIN_LINKS = [
+  {
+    id: 'dento-smart',
+    label: 'Dento Smart',
+    url: 'https://dento-smart.inkubasistartupunhas.id/',
+  },
+  {
+    id: 'ergoquipt-admin',
+    label: 'Ergoquipt Admin',
+    url: 'https://ergoquipt-admin.inkubasistartupunhas.id/',
+  },
+  {
+    id: 'aquanotes-web',
+    label: 'Aquanotes Web',
+    url: 'https://aquanotes-web.inkubasistartupunhas.id/',
+  },
+];

@@ -79,9 +79,22 @@ canvas {
 
 .utility-bar {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
   padding: 0.65rem 0.85rem;
   border: 1px solid rgba(56, 189, 248, 0.18);
   background: rgba(2, 6, 23, 0.78);
+}
+
+.utility-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.utility-row--shortcuts {
+  justify-content: flex-end;
 }
 
 .utility-bar::before,
@@ -119,6 +132,12 @@ canvas {
   border-color: rgba(168, 85, 247, 0.24);
 }
 
+.utility-link--ghost {
+  border-color: rgba(71, 85, 105, 0.32);
+  background: rgba(15, 23, 42, 0.68);
+  font-size: 0.68rem;
+}
+
 .metric-tile {
   border: 1px solid rgba(71, 85, 105, 0.45);
   border-radius: 1rem;
@@ -154,6 +173,18 @@ canvas {
 
 .action-button--primary {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(34, 211, 238, 0.2));
+}
+
+.selected-panel {
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.selected-panel.is-hidden {
+  opacity: 0;
+  transform: translateY(1rem);
+  pointer-events: none;
 }
 
 .node-card {
@@ -209,6 +240,109 @@ canvas {
   text-transform: uppercase;
 }
 
+.fleet-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.78);
+  padding: 0.72rem 0.95rem;
+  color: #e2e8f0;
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.fleet-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(34, 211, 238, 0.6);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12);
+}
+
+.fleet-toggle__icon {
+  position: relative;
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.72rem;
+}
+
+.fleet-toggle__icon::before,
+.fleet-toggle__icon::after,
+.fleet-toggle__icon {
+  background: linear-gradient(90deg, #67e8f9, #c084fc);
+}
+
+.fleet-toggle__icon::before,
+.fleet-toggle__icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 0.95rem;
+  height: 2px;
+}
+
+.fleet-toggle__icon::before {
+  top: 0;
+}
+
+.fleet-toggle__icon::after {
+  bottom: 0;
+}
+
+.fleet-toggle__icon {
+  height: 2px;
+  box-shadow: 0 -0.33rem 0 0 rgba(103, 232, 249, 0.85), 0 0.33rem 0 0 rgba(192, 132, 252, 0.85);
+}
+
+.fleet-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: min(36rem, calc(100vh - 12rem));
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.fleet-panel.is-collapsed {
+  opacity: 0;
+  transform: translateX(calc(100% + 1.5rem));
+  pointer-events: none;
+}
+
+.fleet-panel__body {
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.panel-dismiss {
+  border: 1px solid rgba(71, 85, 105, 0.45);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  width: 2rem;
+  height: 2rem;
+  color: #cbd5e1;
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.panel-dismiss:hover {
+  transform: translateY(-1px);
+  border-color: rgba(34, 211, 238, 0.6);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12);
+}
+
 @keyframes scan-flicker {
   0% {
     opacity: 0;
@@ -233,5 +367,10 @@ canvas {
 
   #scene-host {
     min-height: 100vh;
+  }
+
+  .fleet-panel {
+    top: 10rem;
+    max-height: min(60vh, calc(100vh - 11rem));
   }
 }
