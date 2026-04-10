@@ -354,14 +354,16 @@ export class HomelabScene {
     this.controls.enableRotate = true;
     this.controls.autoRotate = this.autoRotate;
     this.desiredTarget.copy(this.defaultTarget);
-    this.desiredCamera.copy(this.defaultCamera);
+    this.desiredCamera.copy(this.camera.position);
   }
 
   animate() {
     const elapsed = this.clock.getElapsedTime();
 
-    this.controls.target.lerp(this.desiredTarget, 0.075);
-    this.camera.position.lerp(this.desiredCamera, 0.055);
+    this.controls.target.lerp(this.desiredTarget, this.selectedNodeId ? 0.075 : 0.045);
+    if (this.selectedNodeId) {
+      this.camera.position.lerp(this.desiredCamera, 0.055);
+    }
     this.controls.update();
     this.particles.rotation.y = elapsed * 0.015;
 
