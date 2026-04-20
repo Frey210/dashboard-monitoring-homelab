@@ -44,11 +44,7 @@ function dominantState(...states) {
 }
 
 function createFiberCurve(from, to) {
-  const midpoint = from.clone().lerp(to, 0.5);
-  const span = from.distanceTo(to);
-  const elevation = Math.max(1.2, span * 0.1);
-  midpoint.y += elevation;
-  return new THREE.CatmullRomCurve3([from.clone(), midpoint, to.clone()]);
+  return new THREE.LineCurve3(from.clone(), to.clone());
 }
 
 function createPacketMaterial(color, intensity, opacity = 1) {
@@ -65,16 +61,16 @@ function packetConfigForState(state) {
     return {
       color: new THREE.Color('#f59e0b'),
       speed: 0.018,
-      spacing: 0.04,
-      count: 7,
+      spacing: 0.036,
+      count: 8,
     };
   }
 
   return {
     color: new THREE.Color('#52f7ff'),
-    speed: 0.15,
-    spacing: 0.17,
-    count: 4,
+    speed: 0.22,
+    spacing: 0.1,
+    count: 10,
   };
 }
 
@@ -273,19 +269,16 @@ export class HomelabScene {
 
   createLink({ fromNodeId, toNodeId, from, to, emphasis }) {
     const curve = createFiberCurve(from, to);
-    const shellGeometry = new THREE.TubeGeometry(curve, 40, 0.11, 10, false);
-    const coreGeometry = new THREE.TubeGeometry(curve, 40, 0.045, 10, false);
+    const shellGeometry = new THREE.TubeGeometry(curve, 1, 0.085, 12, false);
+    const coreGeometry = new THREE.TubeGeometry(curve, 1, 0.032, 10, false);
 
     const shell = new THREE.Mesh(
       shellGeometry,
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshBasicMaterial({
         color: new THREE.Color('#0b2444'),
-        emissive: new THREE.Color('#0a1f3c'),
-        emissiveIntensity: 0.18,
         transparent: true,
-        opacity: 0.6,
-        metalness: 0.28,
-        roughness: 0.34,
+        opacity: 0.88,
+        toneMapped: false,
       }),
     );
 
@@ -294,7 +287,7 @@ export class HomelabScene {
       new THREE.MeshBasicMaterial({
         color: new THREE.Color('#46f3ff'),
         transparent: true,
-        opacity: 0.96,
+        opacity: 1,
         toneMapped: false,
       }),
     );
@@ -326,7 +319,7 @@ export class HomelabScene {
         head,
         tailOne,
         tailTwo,
-        offset: index / 7,
+        offset: index,
         jitter: Math.random() * 0.045,
       };
     });
@@ -340,6 +333,7 @@ export class HomelabScene {
       core,
       packets,
       state: 'up',
+      packetPhase: Math.random(),
     };
 
     this.linkPackets.push(link);
@@ -447,20 +441,16 @@ export class HomelabScene {
 
       if (state === 'down') {
         link.shell.material.color.set('#4b5563');
-        link.shell.material.emissive.set('#1f2937');
-        link.shell.material.emissiveIntensity = 0;
         link.shell.material.opacity = 0.45;
         link.core.material.color.set('#6b7280');
-        link.core.material.opacity = 0.2;
+        link.core.material.opacity = 0.3;
         return;
       }
 
-      link.shell.material.color.set(state === 'warn' ? '#13273f' : '#102744');
-      link.shell.material.emissive.set(state === 'warn' ? '#3b1d04' : '#0a2e55');
-      link.shell.material.emissiveIntensity = state === 'warn' ? 0.24 : 0.2;
-      link.shell.material.opacity = 0.62;
+      link.shell.material.color.set(state === 'warn' ? '#2d1d0a' : '#0f2f52');
+      link.shell.material.opacity = state === 'warn' ? 0.9 : 0.88;
       link.core.material.color.set(state === 'warn' ? '#f59e0b' : '#49f4ff');
-      link.core.material.opacity = state === 'warn' ? 0.78 : 0.96;
+      link.core.material.opacity = state === 'warn' ? 0.92 : 1;
     });
   }
 
@@ -518,13 +508,15 @@ export class HomelabScene {
           return;
         }
 
+        const flowHead = (elapsed * config.speed + link.packetPhase) % 1;
+        const spacingOffset = packet.offset * config.spacing;
         const travel = link.state === 'warn'
-          ? (elapsed * config.speed + packet.offset * config.spacing + packet.jitter) % 1
-          : (elapsed * config.speed + packet.offset) % 1;
+          ? (flowHead - spacingOffset + packet.jitter + 1) % 1
+          : (flowHead - spacingOffset + 1) % 1;
 
         const headPoint = link.curve.getPointAt(travel);
-        const tailPointOne = link.curve.getPointAt((travel - 0.02 + 1) % 1);
-        const tailPointTwo = link.curve.getPointAt((travel - 0.038 + 1) % 1);
+        const tailPointOne = link.curve.getPointAt((travel - 0.018 + 1) % 1);
+        const tailPointTwo = link.curve.getPointAt((travel - 0.034 + 1) % 1);
 
         packet.group.visible = true;
         packet.group.position.copy(headPoint);
