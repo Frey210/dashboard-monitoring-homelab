@@ -1,0 +1,598 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Exporter Notes",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "content": "### MKTXP Capability Summary\n- Live exporter metrics use the `mktxp_*` namespace.\n- DHCP lease **count** is available from MKTXP.\n- DHCP lease **IP and hostname** are added through a custom MikroTik API collector.\n- Per-client upload/download traffic is **not available** from the current exporter stack. Aggregate LAN traffic is shown instead.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.0.2",
+      "transparent": true
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Router CPU Load",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mktxp_system_cpu_load{routerboard_name=\"$node\"}",
+          "instant": true,
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Router Memory Usage",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(1 - mktxp_system_free_memory{routerboard_name=\"$node\"} / mktxp_system_total_memory{routerboard_name=\"$node\"}) * 100",
+          "instant": true,
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "System Uptime",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mktxp_system_uptime{routerboard_name=\"$node\"}",
+          "instant": true,
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Open Connections",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mktxp_ip_connections_total{routerboard_name=\"$node\"}",
+          "instant": true,
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Interface Traffic",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mktxp_interface_rx_byte_total{routerboard_name=\"$node\",name=~\"ether1|ether2|ether3|bridge-server\"}[4m]) * 8",
+          "editorMode": "code",
+          "legendFormat": "{{name}} RX"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(mktxp_interface_tx_byte_total{routerboard_name=\"$node\",name=~\"ether1|ether2|ether3|bridge-server\"}[4m]) * 8",
+          "editorMode": "code",
+          "legendFormat": "{{name}} TX"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Interface Errors",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mktxp_interface_rx_error_total{routerboard_name=\"$node\",name=~\"ether1|ether2|ether3|bridge-server\"}[4m])",
+          "editorMode": "code",
+          "legendFormat": "{{name}} RX"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(mktxp_interface_tx_error_total{routerboard_name=\"$node\",name=~\"ether1|ether2|ether3|bridge-server\"}[4m])",
+          "editorMode": "code",
+          "legendFormat": "{{name}} TX"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pps",
+          "decimals": 2
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "DHCP Clients",
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mikrotik_dhcp_lease_active{routerboard_name=\"$node\"}",
+          "instant": true,
+          "format": "table",
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "routerboard_address": true,
+              "routerboard_name": true,
+              "Value": true
+            },
+            "renameByName": {
+              "address": "IP Address",
+              "host_name": "Hostname",
+              "mac_address": "MAC Address",
+              "server": "DHCP Server",
+              "status": "Status"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "ARP Clients",
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 14,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mikrotik_arp_entry_info{routerboard_name=\"$node\",complete=\"true\"}",
+          "instant": true,
+          "format": "table",
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "routerboard_address": true,
+              "routerboard_name": true,
+              "Value": true
+            },
+            "renameByName": {
+              "address": "IP Address",
+              "mac_address": "MAC Address",
+              "interface": "Interface",
+              "status": "Status",
+              "complete": "Complete"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "DHCP Leases by Server",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 22
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mktxp_dhcp_lease_active_count{routerboard_name=\"$node\"}",
+          "instant": true,
+          "editorMode": "code",
+          "legendFormat": "{{server}}"
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "showUnfilled": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Aggregate LAN Traffic (Fallback)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 22
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(mktxp_interface_rx_byte_total{routerboard_name=\"$node\",name=~\"ether2|ether3|bridge-server\"}[4m])) * 8",
+          "editorMode": "code",
+          "legendFormat": "LAN RX"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(mktxp_interface_tx_byte_total{routerboard_name=\"$node\",name=~\"ether2|ether3|bridge-server\"}[4m])) * 8",
+          "editorMode": "code",
+          "legendFormat": "LAN TX"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "text",
+      "title": "Per-Client Traffic Limitation",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 22
+      },
+      "options": {
+        "content": "### No Per-Client Bandwidth Here\nCurrent MKTXP + RouterOS API metrics do **not** expose upload/download counters per DHCP client IP.\n\nAccurate per-client traffic requires one of:\n- MikroTik Simple Queues per client\n- Traffic Flow / NetFlow collector\n- A custom queue/API collector designed for per-IP accounting\n\nThis dashboard shows aggregate LAN traffic only.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.0.2",
+      "transparent": true
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "style": "dark",
+  "tags": [
+    "mikrotik",
+    "mktxp",
+    "routeros"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "node",
+        "label": "Router",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prom-node-local"
+        },
+        "definition": "label_values(mktxp_system_identity_info, routerboard_name)",
+        "query": {
+          "query": "label_values(mktxp_system_identity_info, routerboard_name)",
+          "refId": "Prometheus-node"
+        },
+        "refresh": 1,
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "selected": true,
+          "text": "mtc-core-router",
+          "value": "mtc-core-router"
+        }
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Mikrotik MKTXP Exporter",
+  "uid": "78d5fa8d-8a24-4a63-bfa7-802d55bb1637",
+  "version": 3,
+  "weekStart": ""
+}
