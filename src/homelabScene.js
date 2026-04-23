@@ -191,7 +191,7 @@ export class HomelabScene {
     const auraGeometry = new THREE.SphereGeometry(1.65, 32, 32);
     const ringGeometry = new THREE.TorusGeometry(2.5, 0.08, 16, 100);
 
-    const gatewayPosition = new THREE.Vector3(...NODE_LAYOUT.find((node) => node.id === 'gateway').position);
+    const gatewayPosition = new THREE.Vector3(...NODE_LAYOUT.find((node) => node.id === 'mtc-core-router').position);
     const monitoringPosition = new THREE.Vector3(...NODE_LAYOUT.find((node) => node.id === 'aqn-node1').position);
 
     NODE_LAYOUT.forEach((node) => {
@@ -200,12 +200,12 @@ export class HomelabScene {
       group.position.copy(position);
 
       const baseColor =
-        node.kind === 'gateway'
-          ? NEON.gateway
+        node.kind === 'core'
+          ? NEON.core
           : node.kind === 'monitoring'
             ? NEON.monitoring
-            : node.kind === 'standalone'
-              ? NEON.standalone
+            : node.kind === 'edge'
+              ? NEON.edge
               : NEON.cluster;
 
       const sphere = new THREE.Mesh(sphereGeometry, createMaterial(baseColor));
@@ -230,16 +230,16 @@ export class HomelabScene {
         }),
       );
       ring.rotation.x = Math.PI / 2;
-      ring.scale.setScalar(node.kind === 'gateway' ? 1.15 : 0.55);
+      ring.scale.setScalar(node.kind === 'core' ? 1.22 : node.kind === 'monitoring' ? 0.72 : 0.55);
 
       group.add(sphere, aura, ring);
       this.scene.add(group);
 
       const links = [];
-      if (node.id !== 'gateway') {
+      if (node.id !== 'mtc-core-router') {
         links.push(this.createLink({
           fromNodeId: node.id,
-          toNodeId: 'gateway',
+          toNodeId: 'mtc-core-router',
           from: position,
           to: gatewayPosition,
           emphasis: node.kind,
@@ -269,8 +269,8 @@ export class HomelabScene {
 
   createLink({ fromNodeId, toNodeId, from, to, emphasis }) {
     const curve = createFiberCurve(from, to);
-    const shellGeometry = new THREE.TubeGeometry(curve, 1, 0.085, 12, false);
-    const coreGeometry = new THREE.TubeGeometry(curve, 1, 0.032, 10, false);
+    const shellGeometry = new THREE.TubeGeometry(curve, 1, 0.11, 12, false);
+    const coreGeometry = new THREE.TubeGeometry(curve, 1, 0.045, 10, false);
 
     const shell = new THREE.Mesh(
       shellGeometry,

@@ -14,9 +14,9 @@ document.querySelector('#app').innerHTML = `
         <div class="header-panel pointer-events-auto">
           <p class="text-[11px] uppercase tracking-[0.38em] text-cyan-300/80">MTC SERVER INFRASTRUCTURE</p>
           <p class="mt-2 font-mono text-[10px] uppercase tracking-[0.3em] text-fuchsia-300/70">SYS_OPS // CORE_DIAGNOSTIC_INTERFACE_V1.0</p>
-          <h1 class="mt-3 text-2xl font-semibold text-white md:text-3xl">Gateway Topology</h1>
+          <h1 class="mt-3 text-2xl font-semibold text-white md:text-3xl">Core Network Topology</h1>
           <p class="header-copy mt-2 text-sm text-slate-300">
-            Prometheus-linked gateway topology and node-fleet telemetry.
+            MikroTik-centered topology and Raspberry fleet telemetry.
           </p>
           <div class="header-meta mt-4">
             <span class="header-chip">STATUS: NOMINAL</span>
@@ -286,6 +286,7 @@ function renderSelection(snapshot) {
   selectedNodeTemperature.className = `metric-value tech-copy ${temperatureTone(snapshot.temperature).className}`;
   selectedNodeState.textContent = snapshot.state;
   selectedNodeState.className = `rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${badgeForState(snapshot.state)}`;
+  openNodeService.textContent = snapshot.kind === 'core' ? 'Open Router' : 'Open Node Exporter';
 }
 
 function clearSelection() {

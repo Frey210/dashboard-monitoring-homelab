@@ -11,14 +11,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const nodes = [
-  { id: 'gateway', node: 'gateway', label: 'Gateway', ip: '192.168.8.1' },
-  { id: 'aqn-node1', node: 'aqn-node1', label: 'aqn-node1', ip: '192.168.8.101' },
-  { id: 'aqn-node2', node: 'aqn-node2', label: 'aqn-node2', ip: '192.168.8.102' },
-  { id: 'aqn-node3', node: 'aqn-node3', label: 'aqn-node3', ip: '192.168.8.103' },
-  { id: 'aqn-node4', node: 'aqn-node4', label: 'aqn-node4', ip: '192.168.8.104' },
-  { id: 'aqn-node5', node: 'aqn-node5', label: 'aqn-node5', ip: '192.168.8.105' },
-  { id: 'ergoquipt', node: 'ergoquipt', label: 'Ergoquipt', ip: '192.168.8.106' },
-  { id: 'home', node: 'home', label: 'Home', ip: '192.168.8.127' },
+  { id: 'mtc-core-router', node: 'mtc-core-router', label: 'MTC Core Router', ip: '192.168.8.1', kind: 'core', source: 'mikrotik', role: 'network', type: 'core' },
+  { id: 'aqn-node1', node: 'aqn-node1', label: 'aqn-node1', ip: '192.168.8.101', kind: 'monitoring', source: 'raspi', role: 'monitoring', type: 'compute' },
+  { id: 'aqn-node2', node: 'aqn-node2', label: 'aqn-node2', ip: '192.168.8.102', kind: 'cluster', source: 'raspi', role: 'cluster', type: 'compute' },
+  { id: 'aqn-node3', node: 'aqn-node3', label: 'aqn-node3', ip: '192.168.8.103', kind: 'cluster', source: 'raspi', role: 'cluster', type: 'compute' },
+  { id: 'aqn-node4', node: 'aqn-node4', label: 'aqn-node4', ip: '192.168.8.104', kind: 'cluster', source: 'raspi', role: 'cluster', type: 'compute' },
+  { id: 'aqn-node5', node: 'aqn-node5', label: 'aqn-node5', ip: '192.168.8.105', kind: 'cluster', source: 'raspi', role: 'cluster', type: 'compute' },
+  { id: 'ergoquipt', node: 'ergoquipt', label: 'Ergoquipt', ip: '192.168.8.106', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
+  { id: 'home', node: 'home', label: 'Home', ip: '192.168.8.127', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
+  { id: 'aerasea', node: 'aerasea', label: 'Aerasea', ip: '192.168.8.95', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
 ];
 
 async function queryPrometheus(query) {
@@ -60,6 +61,15 @@ function nodeState({ isUp, cpu, memory, temperature }) {
   return 'up';
 }
 
+function metricValue(results, selector = () => true) {
+  const item = results.find((entry) => selector(entry.metric ?? {}));
+  if (!item) {
+    return null;
+  }
+
+  return Number(item.value?.[1] ?? 0);
+}
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -67,27 +77,67 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/metrics', async (req, res) => {
   const serverNow = new Date();
   try {
-    const [upResults, cpuResults, memoryResults, hwmonTempResults, thermalZoneTempResults] = await Promise.all([
+    const [
+      raspiUpResults,
+      cpuResults,
+      memoryResults,
+      hwmonTempResults,
+      thermalZoneTempResults,
+      mikrotikUpResults,
+      mikrotikCpuResults,
+      mikrotikFreeMemoryResults,
+      mikrotikTotalMemoryResults,
+      mikrotikTempResults,
+    ] = await Promise.all([
       queryPrometheus('up{job="raspi-all"}'),
       queryPrometheus('100 - (avg by(instance) (rate(node_cpu_seconds_total{job="raspi-all",mode="idle"}[5m])) * 100)'),
       queryPrometheus('100 * (1 - (node_memory_MemAvailable_bytes{job="raspi-all"} / node_memory_MemTotal_bytes{job="raspi-all"}))'),
       queryPrometheus('max by(instance) (node_hwmon_temp_celsius{job="raspi-all"})'),
       queryPrometheus('max by(instance) (node_thermal_zone_temp{job="raspi-all"} / 1000)'),
+      queryPrometheus('up{job="mikrotik"}'),
+      queryPrometheus('mktxp_system_cpu_load{job="mikrotik",routerboard_name="mtc-core-router"}'),
+      queryPrometheus('mktxp_system_free_memory{job="mikrotik",routerboard_name="mtc-core-router"}'),
+      queryPrometheus('mktxp_system_total_memory{job="mikrotik",routerboard_name="mtc-core-router"}'),
+      queryPrometheus('mktxp_system_cpu_temperature{job="mikrotik",routerboard_name="mtc-core-router"}'),
     ]);
 
-    const upMap = coerceMetricMap(upResults);
+    const upMap = coerceMetricMap(raspiUpResults);
     const cpuMap = coerceMetricMap(cpuResults);
     const memoryMap = coerceMetricMap(memoryResults);
     const hwmonTempMap = coerceMetricMap(hwmonTempResults);
     const thermalZoneTempMap = coerceMetricMap(thermalZoneTempResults);
+    const mikrotikUp = metricValue(mikrotikUpResults, (metric) => metric.instance === 'localhost:9436') === 1;
+    const mikrotikCpu = metricValue(mikrotikCpuResults, (metric) => metric.routerboard_name === 'mtc-core-router') ?? 0;
+    const mikrotikFreeMemory = metricValue(mikrotikFreeMemoryResults, (metric) => metric.routerboard_name === 'mtc-core-router');
+    const mikrotikTotalMemory = metricValue(mikrotikTotalMemoryResults, (metric) => metric.routerboard_name === 'mtc-core-router');
+    const mikrotikMemory = mikrotikFreeMemory !== null && mikrotikTotalMemory
+      ? 100 * (1 - (mikrotikFreeMemory / mikrotikTotalMemory))
+      : 0;
+    const mikrotikTemperature = metricValue(mikrotikTempResults, (metric) => metric.routerboard_name === 'mtc-core-router');
 
     const payload = nodes.map((node) => {
-      const instance = `${node.ip}:9100`;
-      const isUp = upMap.get(instance) === 1;
-      const cpu = Number((cpuMap.get(instance) ?? 0).toFixed(1));
-      const memory = Number((memoryMap.get(instance) ?? 0).toFixed(1));
-      const tempMetric = hwmonTempMap.get(instance) ?? thermalZoneTempMap.get(instance) ?? null;
-      const temperature = tempMetric === null ? null : Number(tempMetric.toFixed(1));
+      let isUp;
+      let cpu;
+      let memory;
+      let temperature;
+      let serviceUrl;
+
+      if (node.source === 'mikrotik') {
+        isUp = mikrotikUp;
+        cpu = Number(mikrotikCpu.toFixed(1));
+        memory = Number(mikrotikMemory.toFixed(1));
+        temperature = mikrotikTemperature === null ? null : Number(mikrotikTemperature.toFixed(1));
+        serviceUrl = `http://${node.ip}`;
+      } else {
+        const instance = `${node.ip}:9100`;
+        isUp = upMap.get(instance) === 1;
+        cpu = Number((cpuMap.get(instance) ?? 0).toFixed(1));
+        memory = Number((memoryMap.get(instance) ?? 0).toFixed(1));
+        const tempMetric = hwmonTempMap.get(instance) ?? thermalZoneTempMap.get(instance) ?? null;
+        temperature = tempMetric === null ? null : Number(tempMetric.toFixed(1));
+        serviceUrl = `http://${node.ip}:9100`;
+      }
+
       const state = nodeState({ isUp, cpu, memory, temperature: temperature ?? 0 });
 
       return {
@@ -97,7 +147,7 @@ app.get('/api/metrics', async (req, res) => {
         cpu,
         memory,
         temperature,
-        serviceUrl: `http://${node.ip}:9100`,
+        serviceUrl,
       };
     });
 
@@ -126,7 +176,7 @@ app.get('/api/metrics', async (req, res) => {
         cpu: 0,
         memory: 0,
         temperature: null,
-        serviceUrl: `http://${node.ip}:9100`,
+        serviceUrl: node.source === 'mikrotik' ? `http://${node.ip}` : `http://${node.ip}:9100`,
       })),
     });
   }
