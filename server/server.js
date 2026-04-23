@@ -17,8 +17,8 @@ const nodes = [
   { id: 'aqn-node3', node: 'aqn-node3', label: 'aqn-node3', ip: '192.168.8.103', kind: 'cluster', source: 'raspi', role: 'cluster', type: 'compute' },
   { id: 'aqn-node4', node: 'aqn-node4', label: 'aqn-node4', ip: '192.168.8.104', kind: 'cluster', source: 'raspi', role: 'cluster', type: 'compute' },
   { id: 'aqn-node5', node: 'aqn-node5', label: 'aqn-node5', ip: '192.168.8.105', kind: 'cluster', source: 'raspi', role: 'cluster', type: 'compute' },
-  { id: 'ergoquipt', node: 'ergoquipt', label: 'Ergoquipt', ip: '192.168.8.106', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
-  { id: 'home', node: 'home', label: 'Home', ip: '192.168.8.127', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
+  { id: 'ergoquipt', node: 'ergoquipt', label: 'Ergoquipt', ip: '192.168.8.97', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
+  { id: 'home', node: 'home', label: 'Home', ip: '192.168.8.96', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
   { id: 'aerasea', node: 'aerasea', label: 'Aerasea', ip: '192.168.8.95', kind: 'edge', source: 'raspi', role: 'edge', type: 'compute' },
 ];
 
