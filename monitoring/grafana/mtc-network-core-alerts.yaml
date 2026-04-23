@@ -1,0 +1,319 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: mtc-network-core
+    folder: Homelab
+    interval: 1m
+    rules:
+      - uid: mtc_router_cpu_high
+        title: MikroTik CPU > 80%
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom-node-local
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prom-node-local
+              editorMode: code
+              expr: mktxp_system_cpu_load{job='mikrotik',routerboard_name='mtc-core-router'}
+              instant: false
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              settings:
+                mode: replaceNN
+                replaceWithValue: 0
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 80
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: mtc-network-core-monitoring
+        panelId: 2
+        noDataState: Alerting
+        executionErrorState: Alerting
+        for: 2m
+        annotations:
+          summary: MikroTik CPU load is above 80%.
+        labels:
+          severity: warning
+          scope: network
+        isPaused: false
+
+      - uid: mtc_router_interface_down
+        title: Core Interface Down
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom-node-local
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prom-node-local
+              editorMode: code
+              expr: min(mktxp_interface_status{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'})
+              instant: false
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              settings:
+                mode: replaceNN
+                replaceWithValue: 0
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: mtc-network-core-monitoring
+        panelId: 8
+        noDataState: Alerting
+        executionErrorState: Alerting
+        for: 2m
+        annotations:
+          summary: One of the core router interfaces is down.
+        labels:
+          severity: critical
+          scope: network
+        isPaused: false
+
+      - uid: mtc_router_drop_spike
+        title: Packet Drop Spike
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom-node-local
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prom-node-local
+              editorMode: code
+              expr: sum(rate(mktxp_interface_rx_drop_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[5m])) + sum(rate(mktxp_interface_tx_drop_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[5m]))
+              instant: false
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              settings:
+                mode: replaceNN
+                replaceWithValue: 0
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: mtc-network-core-monitoring
+        panelId: 9
+        noDataState: OK
+        executionErrorState: Alerting
+        for: 5m
+        annotations:
+          summary: Packet drops on core interfaces exceeded 1 packet/s.
+        labels:
+          severity: warning
+          scope: network
+        isPaused: false
+
+      - uid: mtc_ap_unreachable
+        title: Access Point Unreachable
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom-node-local
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prom-node-local
+              editorMode: code
+              expr: probe_success{job='blackbox_icmp_targets',instance='192.168.8.2'}
+              instant: false
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              settings:
+                mode: replaceNN
+                replaceWithValue: 0
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: mtc-network-core-monitoring
+        panelId: 12
+        noDataState: Alerting
+        executionErrorState: Alerting
+        for: 2m
+        annotations:
+          summary: The access point at 192.168.8.2 is unreachable via ICMP probe.
+        labels:
+          severity: critical
+          scope: network
+        isPaused: false

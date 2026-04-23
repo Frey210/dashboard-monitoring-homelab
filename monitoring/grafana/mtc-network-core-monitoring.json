@@ -1,0 +1,726 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Topology Overview",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "content": "### MTC Network Core Monitoring\n**Core Router:** `192.168.8.1` via `mktxp` on `localhost:9436`\n\n**Access Point:** `192.168.8.2`\nFallback monitoring is active via blackbox ICMP because no AP exporter was detected on `:9100`.\n\n**Datasource:** `prom-node-local`",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.0.2",
+      "transparent": true
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Router CPU Load",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mktxp_system_cpu_load{job='mikrotik',routerboard_name='mtc-core-router'}",
+          "instant": true,
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Router Memory Usage",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (1 - (mktxp_system_free_memory{job='mikrotik',routerboard_name='mtc-core-router'} / mktxp_system_total_memory{job='mikrotik',routerboard_name='mtc-core-router'}))",
+          "instant": true,
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Router Uptime",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mktxp_system_uptime{job='mikrotik',routerboard_name='mtc-core-router'}",
+          "instant": true,
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Active Connections",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mktxp_ip_connections_total{job='mikrotik',routerboard_name='mtc-core-router'}",
+          "instant": true,
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "WAN RX/TX",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mktxp_interface_rx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name='ether1'}[$__rate_interval])",
+          "editorMode": "code",
+          "legendFormat": "WAN RX"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(mktxp_interface_tx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name='ether1'}[$__rate_interval])",
+          "editorMode": "code",
+          "legendFormat": "WAN TX"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "binBps",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "LAN RX/TX",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(mktxp_interface_rx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether2|ether3'}[$__rate_interval]))",
+          "editorMode": "code",
+          "legendFormat": "LAN RX"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(mktxp_interface_tx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether2|ether3'}[$__rate_interval]))",
+          "editorMode": "code",
+          "legendFormat": "LAN TX"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "binBps",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Interface Utilization (%)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (8 * rate(mktxp_interface_tx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name='ether1'}[$__rate_interval])) / clamp_min(mktxp_interface_rate{job='mikrotik',routerboard_name='mtc-core-router',name='ether1'} * 1000000, 1)",
+          "editorMode": "code",
+          "legendFormat": "WAN TX Util"
+        },
+        {
+          "refId": "B",
+          "expr": "100 * (8 * rate(mktxp_interface_rx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name='ether2'}[$__rate_interval])) / clamp_min(mktxp_interface_rate{job='mikrotik',routerboard_name='mtc-core-router',name='ether2'} * 1000000, 1)",
+          "editorMode": "code",
+          "legendFormat": "LAN ether2 RX Util"
+        },
+        {
+          "refId": "C",
+          "expr": "100 * (8 * rate(mktxp_interface_rx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name='ether3'}[$__rate_interval])) / clamp_min(mktxp_interface_rate{job='mikrotik',routerboard_name='mtc-core-router',name='ether3'} * 1000000, 1)",
+          "editorMode": "code",
+          "legendFormat": "LAN ether3 RX Util"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Packet Drops",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mktxp_interface_rx_drop_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[$__rate_interval])",
+          "editorMode": "code",
+          "legendFormat": "{{name}} RX drop"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(mktxp_interface_tx_drop_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[$__rate_interval])",
+          "editorMode": "code",
+          "legendFormat": "{{name}} TX drop"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pps",
+          "decimals": 2
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Interface Errors",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mktxp_interface_rx_error_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[$__rate_interval])",
+          "editorMode": "code",
+          "legendFormat": "{{name}} RX err"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(mktxp_interface_tx_error_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[$__rate_interval])",
+          "editorMode": "code",
+          "legendFormat": "{{name}} TX err"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pps",
+          "decimals": 2
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Core Throughput (Mbps)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "8 * sum(rate(mktxp_interface_rx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[$__rate_interval])) / 1000000",
+          "editorMode": "code",
+          "legendFormat": "Aggregate RX"
+        },
+        {
+          "refId": "B",
+          "expr": "8 * sum(rate(mktxp_interface_tx_byte_total{job='mikrotik',routerboard_name='mtc-core-router',name=~'ether1|ether2|ether3'}[$__rate_interval])) / 1000000",
+          "editorMode": "code",
+          "legendFormat": "Aggregate TX"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbps",
+          "decimals": 2
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "AP Reachability",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 28
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{job='blackbox_icmp_targets',instance='192.168.8.2'}",
+          "instant": true,
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "AP 24h Uptime",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 28
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * avg_over_time(probe_success{job='blackbox_icmp_targets',instance='192.168.8.2'}[24h])",
+          "instant": true,
+          "editorMode": "code",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "AP Ping Latency",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-node-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_duration_seconds{job='blackbox_icmp_targets',instance='192.168.8.2'}",
+          "editorMode": "code",
+          "legendFormat": "AP ICMP latency"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "style": "dark",
+  "tags": [
+    "network",
+    "mikrotik",
+    "access-point",
+    "homelab"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "MTC Network Core Monitoring",
+  "uid": "mtc-network-core-monitoring",
+  "version": 1,
+  "weekStart": ""
+}
